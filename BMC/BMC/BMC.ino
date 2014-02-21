@@ -1,6 +1,6 @@
 #include <DueTimer.h>
 
-const int lowestPin = 5;
+const int lowestPin = 2;
 const int highestPin = 13;
 const int m1_pole_pairs = 7;
 const int m1_A_HIN = 2;
