@@ -79,14 +79,10 @@ static uint32_t bUpdateFlags;
 void calcChannel1()
 {
   static uint32_t ulStart;
-  
-  if(digitalRead(CHANNEL1_IN_PIN))
-  {
+  if(digitalRead(CHANNEL1_IN_PIN)) {
     ulStart = micros();
-  }
-  else
-  {
-    unChannel1InShared = (uint32_t)(micros() - ulStart);
+  } else {
+     unChannel1InShared = (uint32_t)(micros() - ulStart);
     bUpdateFlagsShared |= CHANNEL1_FLAG;
   }
 }
@@ -94,13 +90,10 @@ void calcChannel1()
 void calcChannel2()
 {
   static uint32_t ulStart;
-  
-  if(digitalRead(CHANNEL2_IN_PIN))
-  {
+  if(digitalRead(CHANNEL2_IN_PIN)) {
     ulStart = micros();
   }
-  else
-  {
+  else {
     unChannel2InShared = (uint32_t)(micros() - ulStart);
     bUpdateFlagsShared |= CHANNEL2_FLAG;
   }
@@ -109,12 +102,9 @@ void calcChannel2()
 void calcChannel3()
 {
   static uint32_t ulStart;
-  
-  if(digitalRead(CHANNEL3_IN_PIN))
-  {
+  if(digitalRead(CHANNEL3_IN_PIN)) {
     ulStart = micros();
-  }
-  else
+  } else
   {
     unChannel3InShared = (uint32_t)(micros() - ulStart);
     bUpdateFlagsShared |= CHANNEL3_FLAG;
@@ -124,13 +114,10 @@ void calcChannel3()
 void calcChannel4()
 {
   static uint32_t ulStart;
-  
-  if(digitalRead(CHANNEL4_IN_PIN))
-  {
+  if(digitalRead(CHANNEL4_IN_PIN)) {
     ulStart = micros();
   }
-  else
-  {
+  else {
     unChannel4InShared = (uint32_t)(micros() - ulStart);
     bUpdateFlagsShared |= CHANNEL4_FLAG;
   }
@@ -189,9 +176,9 @@ void readAngle() {
   pitch += C*(a_pitch-pitch) + (1-C)*g_pitch_delta;
   
   Serial.print(t);
-  //Serial.print(",");
-  //Serial.print(micros()-t_micro);
   Serial.print(",");
+  //Serial.print(micros()-t_micro);
+  /*Serial.print(",");
   Serial.print((int)a_roll);
   Serial.print(",");
   Serial.print((int)g_roll);
@@ -203,6 +190,7 @@ void readAngle() {
   Serial.print((int)g_pitch);
   Serial.print(",");
   Serial.println((int)pitch);
+  */
 }
  
 void readServos() {
@@ -219,23 +207,19 @@ void readServos() {
     // however in the future this could change, so lets
     // only copy when the flags tell us we can.
    
-    if(bUpdateFlags & CHANNEL1_FLAG)
-    {
+    if(bUpdateFlags & CHANNEL1_FLAG) {
       unChannel1In = unChannel1InShared;
     }
    
-    if(bUpdateFlags & CHANNEL2_FLAG)
-    {
+    if(bUpdateFlags & CHANNEL2_FLAG) {
       unChannel2In = unChannel2InShared;
     }
    
-    if(bUpdateFlags & CHANNEL3_FLAG)
-    {
+    if(bUpdateFlags & CHANNEL3_FLAG) {
       unChannel3In = unChannel3InShared;
     }
     
-    if(bUpdateFlags & CHANNEL4_FLAG)
-    {
+    if(bUpdateFlags & CHANNEL4_FLAG) {
       unChannel4In = unChannel4InShared;
     }
     // clear shared copy of updated flags as we have already taken the updates
@@ -246,10 +230,18 @@ void readServos() {
     // service routines own these and could update them at any time. During the update, the
     // shared copies may contain junk. Luckily we have our local copies to work with :-)
   }
-  // do any processing from here onwards
-  // only use the local values unChannel1, unChannel2, unChannel3, unChannel4, unChannel5, unChannel6, unChannel7, unChannel8
-  // variables unChannel1InShared, unChannel2InShared, etc are always owned by the 
-  // the interrupt routines and should not be used in loop
+
+  Serial.print(unChannel1In);
+  Serial.print(",");
+  Serial.print(unChannel2In);
+  Serial.print(",");
+  Serial.print(unChannel2In);
+  Serial.print(",");
+  Serial.print(unChannel3In);
+  Serial.print(",");
+  Serial.print(unChannel4In);
+  Serial.print(",");
+  Serial.println(unChannel4In);
 }
   
     
