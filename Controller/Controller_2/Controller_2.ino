@@ -21,9 +21,18 @@ double a_roll_zero = 0, a_pitch_zero = 0; // thousandths of a degree
 int t_last = 0;
 double a_roll = 0, a_pitch = 0; // thousandths of a degree
 double g_roll = 0, g_pitch = 0; // thousandths of a degree
-double roll = 0, pitch = 0; // thousanths of a degree
+double roll = 0, pitch = 0, yaw = 0; // thousanths of a degree
 double C = .05; // coefficient for accelerometer data in complimentary filter
 int loop_period = 5000; // period of control loop in micros
+int thrust_cmd = 0, pitch_cmd = 0, roll_cmd = 0, yaw_cmd = 0; // thousandths of a degree
+int servo_scaling = 100; // thousanths of a degree per microsecond. Results in a maximum angle command of +/-5 degrees.
+int thrust_scaling = 2; // ratio of maximum servo output to thrust command to the escs;
+int m1_cmd = 0, m2_cmd = 0, m3_cmd = 0, m4_cmd = 0;
+float pitch_err = 0, roll_err = 0, yaw_err = 0;
+float pitch_ierr = 0, roll_ierr = 0, yaw_ierr = 0;
+float kp = .01, ki = 0.00, kd = 0;
+float max_ierr = 100, max_err = 100;
+
 
 // Define output servos
 Servo servoChannel1;
@@ -34,16 +43,16 @@ Servo servoChannel4;
 #define LED_PIN 13
 #define I2C_PWR 32
 // Assign your channel in pins
-#define CHANNEL1_IN_PIN 2
-#define CHANNEL2_IN_PIN 3
-#define CHANNEL3_IN_PIN 4
-#define CHANNEL4_IN_PIN 5
+#define CHANNEL1_IN_PIN 2 // Throttle
+#define CHANNEL2_IN_PIN 3 // Aileron
+#define CHANNEL3_IN_PIN 4 // Elevator
+#define CHANNEL4_IN_PIN 5 // Rudder
 
 // Assign your channel out pins
-#define CHANNEL1_OUT_PIN 10
-#define CHANNEL2_OUT_PIN 11
-#define CHANNEL3_OUT_PIN 12
-#define CHANNEL4_OUT_PIN 13
+#define CHANNEL1_OUT_PIN 10 // Front Motor
+#define CHANNEL2_OUT_PIN 11 // Right Motor
+#define CHANNEL3_OUT_PIN 12 // Left Motor
+#define CHANNEL4_OUT_PIN 13 // Left Motor
 
 // These bit flags are set in bUpdateFlagsShared to indicate which
 // channels have new signals
@@ -69,10 +78,12 @@ volatile uint32_t unChannel4InShared;
 // create local variables to hold a local copies of the channel inputs
 // these are declared static so that thier values will be retained
 // between calls to loop.
-static uint32_t unChannel1In;
-static uint32_t unChannel2In;
-static uint32_t unChannel3In;
-static uint32_t unChannel4In;
+static int unChannel1In;
+static int unChannel2In;
+static int unChannel3In;
+static int unChannel4In;
+int ch1 = 0, ch2 = 0, ch3 = 0, ch4 = 0;
+
 // local copy of update flags
 static uint32_t bUpdateFlags;
 
@@ -81,8 +92,9 @@ void calcChannel1()
   static uint32_t ulStart;
   if(digitalRead(CHANNEL1_IN_PIN)) {
     ulStart = micros();
-  } else {
-     unChannel1InShared = (uint32_t)(micros() - ulStart);
+  } 
+  else {
+    unChannel1InShared = (uint32_t)(micros() - ulStart);
     bUpdateFlagsShared |= CHANNEL1_FLAG;
   }
 }
@@ -104,7 +116,8 @@ void calcChannel3()
   static uint32_t ulStart;
   if(digitalRead(CHANNEL3_IN_PIN)) {
     ulStart = micros();
-  } else
+  } 
+  else
   {
     unChannel3InShared = (uint32_t)(micros() - ulStart);
     bUpdateFlagsShared |= CHANNEL3_FLAG;
@@ -166,10 +179,13 @@ void readAngle() {
   // Calculate Gyro Angle
   double gx_cal = gx-gx_zero;
   double gy_cal = gy-gy_zero;
+  double gz_cal = gz-gz_zero;
   double g_roll_delta = gy_cal*500*(double)loop_period/1000/65535; 
   double g_pitch_delta = gx_cal*500*(double)loop_period/1000/65535;
+  double g_yaw_delta = gz_cal*500*(double)loop_period/1000/65535;
   g_roll += g_roll_delta; // thousandths of a degree
   g_pitch += g_pitch_delta; // thousandths of a degree
+  yaw = yaw += g_yaw_delta; // thousandths of a degree
   
   // Calculate Complementary Filter Angle
   roll += C*(a_roll-roll) + (1-C)*g_roll_delta;
@@ -201,24 +217,19 @@ void readServos() {
 
     // take a local copy of which channels were updated in case we need to use this in the rest of loop
     bUpdateFlags = bUpdateFlagsShared;
-   
     // in the current code, the shared values are always populated
     // so we could copy them without testing the flags
     // however in the future this could change, so lets
     // only copy when the flags tell us we can.
-   
     if(bUpdateFlags & CHANNEL1_FLAG) {
       unChannel1In = unChannel1InShared;
     }
-   
     if(bUpdateFlags & CHANNEL2_FLAG) {
       unChannel2In = unChannel2InShared;
     }
-   
     if(bUpdateFlags & CHANNEL3_FLAG) {
       unChannel3In = unChannel3InShared;
     }
-    
     if(bUpdateFlags & CHANNEL4_FLAG) {
       unChannel4In = unChannel4InShared;
     }
@@ -230,21 +241,134 @@ void readServos() {
     // service routines own these and could update them at any time. During the update, the
     // shared copies may contain junk. Luckily we have our local copies to work with :-)
   }
+  
+  ch1 = unChannel1In-1000; // Zero servo reading
+  ch2 = unChannel2In-1500; // Zero servo reading
+  ch3 = unChannel3In-1500; // Zero servo reading
+  ch4 = unChannel4In-1500; // Zero servo reading
 
-  Serial.print(unChannel1In);
+  if (ch1 < 0) {
+    ch1 = 0;
+  } 
+  if (ch1 > 1000) {
+    ch1 = 1000;
+  }
+  if (ch2 < -500) {
+    ch2 = -500;
+  } 
+  if (ch2 > 500) {
+    ch2 = 500;
+  }
+  if (ch3 < -500) {
+    ch3 = -500;
+  } 
+  if (ch3 > 500) {
+    ch3 = 500;
+  }
+  if (ch4 < -500) {
+    ch4 = -500;
+  } 
+  if (ch4 > 500) {
+    ch4 = 500;
+  }
+  /*
+  Serial.print(ch1);
   Serial.print(",");
-  Serial.print(unChannel2In);
+  Serial.print(ch2);
   Serial.print(",");
-  Serial.print(unChannel2In);
+  Serial.print(ch3);
   Serial.print(",");
-  Serial.print(unChannel3In);
-  Serial.print(",");
-  Serial.print(unChannel4In);
-  Serial.print(",");
-  Serial.println(unChannel4In);
-}
+  Serial.println(ch4);
+  */
+  // Scale the servo inputs from microseconds to thousandths of a degree.
+  thrust_cmd = ch1/thrust_scaling;
+  roll_cmd = ch2*servo_scaling;
+  pitch_cmd = ch3*servo_scaling;
+  yaw_cmd = ch4*servo_scaling;
   
     
+  
+}
+
+void PIDcontroller() {
+  // Set all the motor commands to the thrust value. 
+  m1_cmd = thrust_cmd;
+  m2_cmd = thrust_cmd;
+  m3_cmd = thrust_cmd;
+  m4_cmd = thrust_cmd;
+  
+  // Calculate angle errors
+  pitch_err = pitch - pitch_cmd;
+  roll_err = roll - roll_cmd;
+  yaw_err = yaw - yaw_cmd;
+  // Calculate integrated angle errors
+  pitch_ierr += pitch_err*(loop_period/5000);
+  roll_ierr += roll_err*(loop_period/5000);
+  yaw_ierr += yaw_err*(loop_period/5000);
+  // Cap integral windup
+  if (ki*pitch_ierr > max_ierr) {
+    pitch_ierr = max_ierr/ki;
+  } else if (ki*pitch_ierr < -max_ierr) {
+    pitch_ierr = -max_ierr/ki;
+  }
+  if (ki*roll_ierr > max_ierr) {
+    roll_ierr = max_ierr/ki;
+  } else if (ki*roll_ierr < -max_ierr) {
+    roll_ierr = -max_ierr/ki;
+  }
+  if (ki*yaw_ierr > max_ierr) {
+    yaw_ierr = max_ierr/ki;
+  } else if (ki*yaw_ierr < -max_ierr) {
+    yaw_ierr = -max_ierr/ki;
+  }
+  // Cap position feedback
+// Cap integral windup
+  if (kp*pitch_err > max_err) {
+    pitch_err = max_err/kp;
+  } else if (kp*pitch_err < -max_err) {
+    pitch_err = -max_err/kp;
+  }
+  if (kp*roll_err > max_err) {
+    roll_err = max_err/kp;
+  } else if (kp*roll_err < -max_err) {
+    roll_err = -max_err/kp;
+  }
+  if (kp*yaw_err > max_err) {
+    yaw_err = max_err/kp;
+  } else if (kp*yaw_err < -max_err) {
+    yaw_err = -max_err/kp;
+  }
+  // Calculate motor commands
+  m1_cmd = m1_cmd - (kp*pitch_err + ki*pitch_ierr) + (kp*yaw_err + ki*yaw_ierr);
+  m2_cmd = m2_cmd + (kp*roll_err + ki*roll_ierr) - (kp*yaw_err + ki*yaw_ierr);
+  m3_cmd = m3_cmd + (kp*pitch_err + ki*pitch_ierr) + (kp*yaw_err + ki*yaw_ierr);
+  m4_cmd = m4_cmd - (kp*roll_err + ki*roll_ierr) - (kp*yaw_err + ki*yaw_ierr);
+  
+  if (m1_cmd < 0) m1_cmd = 0;
+  if (m2_cmd < 0) m2_cmd = 0;
+  if (m3_cmd < 0) m3_cmd = 0;
+  if (m4_cmd < 0) m4_cmd = 0;
+  if (m1_cmd > 1000) m1_cmd = 1000;
+  if (m2_cmd > 1000) m2_cmd = 1000;
+  if (m3_cmd > 1000) m3_cmd = 1000;
+  if (m4_cmd > 1000) m4_cmd = 1000;
+}  
+      
+void writeServos() {
+  servoChannel1.writeMicroseconds(m1_cmd);
+  servoChannel2.writeMicroseconds(m2_cmd);
+  servoChannel3.writeMicroseconds(m3_cmd);
+  servoChannel4.writeMicroseconds(m4_cmd);
+  
+  Serial.print(m1_cmd);
+  Serial.print(',');
+  Serial.print(m2_cmd);
+  Serial.print(',');
+  Serial.print(m3_cmd);
+  Serial.print(',');
+  Serial.println(m4_cmd);
+  
+}
     
 void setup() {
   Serial.begin(115200);
@@ -305,7 +429,11 @@ void loop() {
   if (abs(micros()-t_last) >= loop_period) {
     t_last = t_last + loop_period;
     // read angle (thousandths of a degree)
+    int t_start = micros();
     readAngle();
     readServos();
+    PIDcontroller();
+    writeServos();
+    // Serial.println(micros()-t_start);
   }
 }
