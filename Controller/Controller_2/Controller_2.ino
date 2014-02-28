@@ -352,6 +352,14 @@ void PIDcontroller() {
   if (m2_cmd > 1000) m2_cmd = 1000;
   if (m3_cmd > 1000) m3_cmd = 1000;
   if (m4_cmd > 1000) m4_cmd = 1000;
+  
+  if (thrust_cmd < 100) {
+    m1_cmd = 0;
+    m2_cmd = 0;
+    m3_cmd = 0;
+    m4_cmd = 0;
+  }
+  
 }  
       
 void writeServos() {
