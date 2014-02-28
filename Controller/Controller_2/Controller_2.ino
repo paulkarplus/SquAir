@@ -186,9 +186,11 @@ void readAngle() {
   g_roll += g_roll_delta; // thousandths of a degree
   g_pitch += g_pitch_delta; // thousandths of a degree
   yaw = yaw += g_yaw_delta; // thousandths of a degree
-  // Check if yaw > 360 degrees
+  // Check if yaw > 360 degrees. Do not allow winding up more than 360 degrees.
   if (yaw > 360000) {
     yaw -= 360000;
+  } else if (yaw < -360000) {
+    yaw += 360000;
   }
   
   // Calculate Complementary Filter Angle
