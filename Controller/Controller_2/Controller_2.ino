@@ -30,8 +30,8 @@ int thrust_scaling = 2; // ratio of maximum servo output to thrust command to th
 int m1_cmd = 0, m2_cmd = 0, m3_cmd = 0, m4_cmd = 0;
 float pitch_err = 0, roll_err = 0, yaw_err = 0;
 float pitch_ierr = 0, roll_ierr = 0, yaw_ierr = 0;
-float kp = .01, ki = 0.00, kd = 0;
-float max_ierr = 100, max_err = 100;
+float kp = .002, ki = 0.000001, kd = 0;
+float max_ierr = 10, max_perr = 30;
 
 
 // Define output servos
@@ -323,26 +323,30 @@ void PIDcontroller() {
   }
   // Cap position feedback
 // Cap integral windup
-  if (kp*pitch_err > max_err) {
-    pitch_err = max_err/kp;
-  } else if (kp*pitch_err < -max_err) {
-    pitch_err = -max_err/kp;
+  if (kp*pitch_err > max_perr) {
+    pitch_err = max_perr/kp;
+  } else if (kp*pitch_err < -max_perr) {
+    pitch_err = -max_perr/kp;
   }
-  if (kp*roll_err > max_err) {
-    roll_err = max_err/kp;
-  } else if (kp*roll_err < -max_err) {
-    roll_err = -max_err/kp;
+  if (kp*roll_err > max_perr) {
+    roll_err = max_perr/kp;
+  } else if (kp*roll_err < -max_perr) {
+    roll_err = -max_perr/kp;
   }
-  if (kp*yaw_err > max_err) {
-    yaw_err = max_err/kp;
-  } else if (kp*yaw_err < -max_err) {
-    yaw_err = -max_err/kp;
+  if (kp*yaw_err > max_perr) {
+    yaw_err = max_perr/kp;
+  } else if (kp*yaw_err < -max_perr) {
+    yaw_err = -max_perr/kp;
   }
   // Calculate motor commands
-  m1_cmd = m1_cmd - (kp*pitch_err + ki*pitch_ierr) + (kp*yaw_err + ki*yaw_ierr);
-  m2_cmd = m2_cmd + (kp*roll_err + ki*roll_ierr) - (kp*yaw_err + ki*yaw_ierr);
-  m3_cmd = m3_cmd + (kp*pitch_err + ki*pitch_ierr) + (kp*yaw_err + ki*yaw_ierr);
-  m4_cmd = m4_cmd - (kp*roll_err + ki*roll_ierr) - (kp*yaw_err + ki*yaw_ierr);
+  //m1_cmd = m1_cmd - (kp*pitch_err + ki*pitch_ierr) + (kp*yaw_err + ki*yaw_ierr);
+  //m2_cmd = m2_cmd + (kp*roll_err + ki*roll_ierr) - (kp*yaw_err + ki*yaw_ierr);
+  //m3_cmd = m3_cmd + (kp*pitch_err + ki*pitch_ierr) + (kp*yaw_err + ki*yaw_ierr);
+  //m4_cmd = m4_cmd - (kp*roll_err + ki*roll_ierr) - (kp*yaw_err + ki*yaw_ierr);
+  m1_cmd = m1_cmd - (kp*pitch_err + ki*pitch_ierr) + yaw_cmd/1000;
+  m2_cmd = m2_cmd + (kp*roll_err + ki*roll_ierr) - yaw_cmd/1000;
+  m3_cmd = m3_cmd + (kp*pitch_err + ki*pitch_ierr) + yaw_cmd/1000;
+  m4_cmd = m4_cmd - (kp*roll_err + ki*roll_ierr) - yaw_cmd/1000;
   
   if (m1_cmd < 0) m1_cmd = 0;
   if (m2_cmd < 0) m2_cmd = 0;
@@ -363,10 +367,15 @@ void PIDcontroller() {
 }  
       
 void writeServos() {
-  servoChannel1.writeMicroseconds(m1_cmd);
-  servoChannel2.writeMicroseconds(m2_cmd);
-  servoChannel3.writeMicroseconds(m3_cmd);
-  servoChannel4.writeMicroseconds(m4_cmd);
+  servoChannel1.writeMicroseconds(1000 + m1_cmd);
+  servoChannel2.writeMicroseconds(1000 + m2_cmd);
+  servoChannel3.writeMicroseconds(1000 + m3_cmd);
+  servoChannel4.writeMicroseconds(1000 + m4_cmd);
+  
+  //servoChannel1.writeMicroseconds(unChannel1In);
+  //servoChannel2.writeMicroseconds(unChannel1In);
+  //servoChannel3.writeMicroseconds(unChannel1In);
+  //servoChannel4.writeMicroseconds(unChannel1In);
   
   Serial.print(m1_cmd);
   Serial.print(',');
@@ -388,10 +397,15 @@ void setup() {
   // attach servo objects, these will generate the correct
   // pulses for driving Electronic speed controllers, servos or other devices
   // designed to interface directly with RC Receivers 
+  servoChannel1.writeMicroseconds(1000);
+  servoChannel2.writeMicroseconds(1000);
+  servoChannel3.writeMicroseconds(1000);
+  servoChannel4.writeMicroseconds(1000);
   servoChannel1.attach(CHANNEL1_OUT_PIN);
   servoChannel2.attach(CHANNEL2_OUT_PIN);
   servoChannel3.attach(CHANNEL3_OUT_PIN);
   servoChannel4.attach(CHANNEL4_OUT_PIN);
+
   
   // attach the interrupts used to read the channels
   attachInterrupt(CHANNEL1_IN_PIN, calcChannel1,CHANGE);
