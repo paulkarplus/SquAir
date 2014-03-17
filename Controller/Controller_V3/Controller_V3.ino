@@ -21,21 +21,20 @@ double a_roll_zero = 0, a_pitch_zero = 0; // thousandths of a degree
 int t_last = 0;
 double a_roll = 0, a_pitch = 0; // thousandths of a degree
 double g_roll = 0, g_pitch = 0; // thousandths of a degree
-double roll = 0, pitch = 0, yaw = 0; // thousanths of a degree
-double rate_roll = 0, rate_pitch = 0; // thousandths of a degree per second
+long roll = 0, pitch = 0, yaw = 0; // thousanths of a degree
+long rate_roll = 0, rate_pitch = 0; // thousandths of a degree per second
 double C = .05; // coefficient for accelerometer data in complimentary filter
 int loop_period = 10000; // period of control loop in micros
 int thrust_cmd = 0, pitch_cmd = 0, roll_cmd = 0, yaw_cmd = 0; // thousandths of a degree
 int servo_scaling = 100; // thousanths of a degree per microsecond. Results in a maximum angle command of +/-50 degrees.
 int thrust_scaling = 2; // ratio of maximum servo output to thrust command to the escs;
 int m1_cmd = 0, m2_cmd = 0, m3_cmd = 0, m4_cmd = 0;
-float pitch_err = 0, roll_err = 0, yaw_err = 0;
-float pitch_ierr = 0, roll_ierr = 0, yaw_ierr = 0;
-float pitch_derr = 0, roll_derr = 0, yaw_derr = 0;
-float kp = .002, ki = 0.000001, kd = 0;
-float stb_p = 45; // 
-float rate_p = 1.5, rate_i = 1, rate_d = .04;
-float imax = 150;
+long pitch_err = 0, roll_err = 0, yaw_err = 0;
+long pitch_ierr = 0, roll_ierr = 0, yaw_ierr = 0;
+long pitch_derr = 0, roll_derr = 0, yaw_derr = 0;
+long stb_p = 45; // 
+long rate_p = 1.5, rate_i = 1, rate_d = .04;
+long imax = 150;
 float max_ierr = 10, max_perr = 30;
 
 

@@ -8,36 +8,20 @@ This code is the controller for the SquAir quadcopter.
 #include "math.h"
 #include "I2Cdev.h"
 #include "MPU6050.h"
-#if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-    #include "Wire.h"
-#endif
+#include <Wire.h>
+#include <Adafruit_BMP085.h>
 
 // Declare global variables
 MPU6050 accelgyro;
+Adafruit_BMP085 bmp;
 int16_t ax, ay, az;
 int16_t gx, gy, gz;
-int16_t gx_zero = 0, gy_zero = 0, gz_zero = 0;
-double a_roll_zero = 0, a_pitch_zero = 0; // thousandths of a degree
+int alt = 0;
+String commandmotor;
+int selectmotor = 0;
 int t_last = 0;
-double a_roll = 0, a_pitch = 0; // thousandths of a degree
-double g_roll = 0, g_pitch = 0; // thousandths of a degree
-double roll = 0, pitch = 0, yaw = 0; // thousanths of a degree
-double rate_roll = 0, rate_pitch = 0; // thousandths of a degree per second
-double C = .05; // coefficient for accelerometer data in complimentary filter
-int loop_period = 10000; // period of control loop in micros
-int thrust_cmd = 0, pitch_cmd = 0, roll_cmd = 0, yaw_cmd = 0; // thousandths of a degree
-int servo_scaling = 100; // thousanths of a degree per microsecond. Results in a maximum angle command of +/-50 degrees.
-int thrust_scaling = 2; // ratio of maximum servo output to thrust command to the escs;
+int loop_period = 2000; // period of control loop in micros (500hz)
 int m1_cmd = 0, m2_cmd = 0, m3_cmd = 0, m4_cmd = 0;
-float pitch_err = 0, roll_err = 0, yaw_err = 0;
-float pitch_ierr = 0, roll_ierr = 0, yaw_ierr = 0;
-float pitch_derr = 0, roll_derr = 0, yaw_derr = 0;
-float kp = .002, ki = 0.000001, kd = 0;
-float stb_p = 45; // 
-float rate_p = 1.5, rate_i = 1, rate_d = .04;
-float imax = 150;
-float max_ierr = 10, max_perr = 30;
-
 
 // Define output servos
 Servo servoChannel1;
@@ -141,91 +125,38 @@ void calcChannel4()
   }
 }
 
-void zeroAccelGyro() {
-  //int16_t ax_cal = 0, ay_cal = 0, az_cal = 0;
-  
-  int samples_to_ave = 100;
-  for (int i = 0; i < samples_to_ave; i++) {
-    // Accelerometer offsets
-    accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-    //ax_cal += ax; ay_cal += ay; az_cal += az;
-    gx_zero += gx; gy_zero += gy; gz_zero += gz;
-    // Gyro offsets
-    double a_roll = atan2(ax,az)*57325; // thousandths of a degree
-    double a_pitch = atan2(ay,az)*57325; // thousandths of a degree
-    a_roll_zero += a_roll; a_pitch_zero += a_pitch;
-    delay(5);
-  }
-  // Average Accelerometer offsets
-  gx_zero = gx_zero/samples_to_ave;
-  gy_zero = gy_zero/samples_to_ave;
-  gz_zero = gz_zero/samples_to_ave;
-  accelgyro.setXGyroOffset(0);
-  accelgyro.setYGyroOffset(0);
-  accelgyro.setZGyroOffset(0);
-  
-  // Average Gyro offsets
-  a_roll_zero = a_roll_zero/samples_to_ave;
-  a_pitch_zero = a_pitch_zero/samples_to_ave;
-}
-
 void readAngle() {
   // read raw accel/gyro measurements from device
   int t = millis();
   int t_micro = micros();
   
   // Read accelgyro data
-  accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-  
-  // Calculate Accel Angle
-  double a_roll = -1*(atan2(ax,az)*57325-a_roll_zero); // thousandths of a degree
-  double a_pitch = (atan2(ay,az)*57325-a_pitch_zero); // thousandths of a degree
-  
-  // Calculate Gyro Angle
-  double gx_cal = gx-gx_zero;
-  double gy_cal = gy-gy_zero;
-  double gz_cal = gz-gz_zero;
-  double g_roll_delta = gy_cal*500*(double)loop_period/1000/65535; 
-  double g_pitch_delta = gx_cal*500*(double)loop_period/1000/65535;
-  double g_yaw_delta = gz_cal*500*(double)loop_period/1000/65535;
-  g_roll += g_roll_delta; // thousandths of a degree
-  g_pitch += g_pitch_delta; // thousandths of a degree
-  yaw = yaw += g_yaw_delta; // thousandths of a degree
-  // Check if yaw > 360 degrees. Do not allow winding up more than 360 degrees.
-  if (yaw > 360000) {
-    yaw -= 360000;
-  } else if (yaw < -360000) {
-    yaw += 360000;
-  }
-  
-  // Calculate Complementary Filter Angle
-  roll += C*(a_roll-roll) + (1-C)*g_roll_delta;
-  pitch += C*(a_pitch-pitch) + (1-C)*g_pitch_delta;
-  
-  // Calculate roll and pitch rates
-  rate_roll = gy_cal*500/65535*1000;
-  rate_pitch = gx_cal*500/65535*1000;
-  
-  
-  
+  accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);  
   Serial.print(t);
   Serial.print(",");
-  //Serial.print(micros()-t_micro);
-  /*Serial.print(",");
-  Serial.print((int)a_roll);
+  Serial.print(ax);
   Serial.print(",");
-  Serial.print((int)g_roll);
+  Serial.print(ay);
   Serial.print(",");
-  Serial.print((int)roll);
+  Serial.print(az);
   Serial.print(",");
-  Serial.print((int)a_pitch);
+  Serial.print(gx);
   Serial.print(",");
-  Serial.print((int)g_pitch);
+  Serial.print(gy);
   Serial.print(",");
-  Serial.println((int)pitch);
+  Serial.print(gz);
+  Serial.print(",");
+}
+
+void readAlt() {
+  // Read the altitude from the BMP085 pressure sensory using the Adafruit library.
+  alt = bmp.readAltitude();
+  /*
+  Serial.print(alt);
+  Serial.print(",");
   */
 }
- 
+
 void readServos() {
   // check shared update flags to see if any channels have a new signal
   if(bUpdateFlagsShared)
@@ -288,106 +219,33 @@ void readServos() {
   if (ch4 > 500) {
     ch4 = 500;
   }
-  /*
+
+  // Print servo values to serial
   Serial.print(ch1);
   Serial.print(",");
   Serial.print(ch2);
   Serial.print(",");
   Serial.print(ch3);
   Serial.print(",");
-  Serial.println(ch4);
-  */
-  // Scale the servo inputs from microseconds to thousandths of a degree.
-  thrust_cmd = ch1/thrust_scaling;
-  roll_cmd = ch2*servo_scaling; // range = -500*servo_scaling to 500*servo_scaling
-  pitch_cmd = ch3*servo_scaling; // range = -500*servo_scaling to 500*servo_scaling
-  yaw_cmd = ch4*servo_scaling; // range = -500*servo_scaling to 500*servo_scaling
-  
-    
-  
+  Serial.print(ch4);
+  Serial.print(",");
 }
-
-void PIDcontroller() {
-  // Set all the motor commands to the thrust value. 
-  m1_cmd = thrust_cmd;
-  m2_cmd = thrust_cmd;
-  m3_cmd = thrust_cmd;
-  m4_cmd = thrust_cmd;
-  
-  // Calculate angle errors
-  pitch_err = pitch - pitch_cmd;
-  roll_err = roll - roll_cmd;
-  yaw_err = yaw - yaw_cmd;
-  
-  // Limit error to 45000 degX1000
-  pitch_err = max(pitch_err,-45000);
-  pitch_err = min(pitch_err,45000);
-  roll_err = max(roll_err,-45000);
-  roll_err = min(roll_err,45000);
-  
-  // Calculate rate errors
-  pitch_d = rate_d*((pitch - pitch_cmd)-(pitch_err/rate_p));
-  pitch_d = rate_d*((roll - roll_cmd)-(roll_err/rate_p));
-  
-  
-  pitch_err = rate_p*(pitch - pitch_cmd);
-  roll_err = rate_p*(roll - roll_cmd);
-  float rate_pitch_err = pitch_err*stb_p - rate_pitch;
-  float rate_roll_err = roll_err*stb_p - rate_roll;
-  
-  
-  // Calculate integrated angle errors
-  pitch_ierr += rate_i*rate_pitch_err*loop_period/1000000; // thousandths of a degrees x sec
-  roll_ierr += rate_i*rate_roll_err*loop_period/1000000;
-  //yaw_ierr += yaw_err*loop_period;
-  
-  // Cap integral windup
-  pitch_ierr = max(-imax, pitch_ierr);
-  pitch_ierr = min(imax, pitch_ierr);
-  roll_ierr = max(-imax, roll_ierr);
-  roll_ierr = min(imax, roll_ierr);
-  
-  
-  
-  // Calculate motor commands
-  //m1_cmd = m1_cmd - (kp*pitch_err + ki*pitch_ierr) + (kp*yaw_err + ki*yaw_ierr);
-  //m2_cmd = m2_cmd + (kp*roll_err + ki*roll_ierr) - (kp*yaw_err + ki*yaw_ierr);
-  //m3_cmd = m3_cmd + (kp*pitch_err + ki*pitch_ierr) + (kp*yaw_err + ki*yaw_ierr);
-  //m4_cmd = m4_cmd - (kp*roll_err + ki*roll_ierr) - (kp*yaw_err + ki*yaw_ierr);
-  m1_cmd = m1_cmd - (kp*pitch_err + ki*pitch_ierr) + yaw_cmd/1000;
-  m2_cmd = m2_cmd + (kp*roll_err + ki*roll_ierr) - yaw_cmd/1000;
-  m3_cmd = m3_cmd + (kp*pitch_err + ki*pitch_ierr) + yaw_cmd/1000;
-  m4_cmd = m4_cmd - (kp*roll_err + ki*roll_ierr) - yaw_cmd/1000;
-  
-  if (m1_cmd < 0) m1_cmd = 0;
-  if (m2_cmd < 0) m2_cmd = 0;
-  if (m3_cmd < 0) m3_cmd = 0;
-  if (m4_cmd < 0) m4_cmd = 0;
-  if (m1_cmd > 1000) m1_cmd = 1000;
-  if (m2_cmd > 1000) m2_cmd = 1000;
-  if (m3_cmd > 1000) m3_cmd = 1000;
-  if (m4_cmd > 1000) m4_cmd = 1000;
-  
-  if (thrust_cmd < 100) {
-    m1_cmd = 0;
-    m2_cmd = 0;
-    m3_cmd = 0;
-    m4_cmd = 0;
-  }
-  
-}  
       
 void writeServos() {
+  m1_cmd = min(m1_cmd,1000);
+  m1_cmd = max(m1_cmd,0);
+  m2_cmd = min(m2_cmd,1000);
+  m2_cmd = max(m2_cmd,0);
+  m3_cmd = min(m3_cmd,1000);
+  m3_cmd = max(m3_cmd,0);
+  m4_cmd = min(m4_cmd,1000);
+  m4_cmd = max(m4_cmd,0);  
   servoChannel1.writeMicroseconds(1000 + m1_cmd);
   servoChannel2.writeMicroseconds(1000 + m2_cmd);
   servoChannel3.writeMicroseconds(1000 + m3_cmd);
   servoChannel4.writeMicroseconds(1000 + m4_cmd);
   
-  //servoChannel1.writeMicroseconds(unChannel1In);
-  //servoChannel2.writeMicroseconds(unChannel1In);
-  //servoChannel3.writeMicroseconds(unChannel1In);
-  //servoChannel4.writeMicroseconds(unChannel1In);
-  
+
   Serial.print(m1_cmd);
   Serial.print(',');
   Serial.print(m2_cmd);
@@ -395,12 +253,14 @@ void writeServos() {
   Serial.print(m3_cmd);
   Serial.print(',');
   Serial.println(m4_cmd);
-  
 }
     
 void setup() {
   Serial.begin(115200);
 
+  // BMP085
+  bmp.begin();
+  
   // Turn on startup LED
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, true);
@@ -442,30 +302,71 @@ void setup() {
   Serial.begin(115200);
   
   // Initialize MPU6050 accelgyro
-  //Serial.println("Initializing I2C devices...");
   accelgyro.initialize();
-  // verify connection
-  //Serial.println("Testing device connections...");
-  //Serial.println(accelgyro.testConnection() ? "MPU6050 connection successful" : "MPU6050 connection failed");
-  // zero accelgyro
-  zeroAccelGyro();
-  //Serial.print(a_roll_zero);
-  //Serial.print(" , ");
-  //Serial.println(a_pitch_zero);
       
   t_last = micros();
+  
   digitalWrite(LED_PIN, false);
 }
 
+int countSplitCharacters(String text, char splitChar) {
+ int returnValue = 0;
+ int index = -1;
+ 
+ while (index > -1) {
+   index = text.indexOf(splitChar, index + 1);
+ 
+   if(index > -1) returnValue+=1;
+ }
+}
+
 void loop() {
+  // Serial Read
+  while (Serial.available()) {
+    char c = Serial.read();
+    if (c == 'a' && selectmotor == 0) { 
+      selectmotor = 1;
+    } else if (c == 'b' && selectmotor == 0) {
+      selectmotor = 2;
+    } else if (c == 'c' && selectmotor == 0) {
+      selectmotor = 3;
+    } else if (c == 'd' && selectmotor == 0) {
+      selectmotor = 4;
+    } else if (c == 'a' && selectmotor == 1) { 
+      selectmotor = 0;
+      m1_cmd = commandmotor.toInt();
+      commandmotor = "";
+    } else if (c == 'b' && selectmotor == 2) {
+      selectmotor = 0;
+      m2_cmd = commandmotor.toInt();
+      commandmotor = "";
+    } else if (c == 'c' && selectmotor == 3) {
+      selectmotor = 0;
+      m3_cmd = commandmotor.toInt();
+      commandmotor = "";
+    } else if (c == 'd' && selectmotor == 4) {
+      selectmotor = 0;
+      m4_cmd = commandmotor.toInt();
+      commandmotor = "";
+    } else if (commandmotor.length() > 3) {
+      selectmotor = 0;
+      commandmotor = "";
+    } else if (selectmotor > 0 && c > 47 && c < 58) {
+      commandmotor += c;
+    } else if (c == 'x') {
+      selectmotor = 0;
+      commandmotor = "";
+    }
+  }
   
   if (abs(micros()-t_last) >= loop_period) {
     t_last = t_last + loop_period;
-    // read angle (thousandths of a degree)
+    
+    // read angle (hundreths of a degree)
     int t_start = micros();
     readAngle();
+    readAlt();
     readServos();
-    PIDcontroller();
     writeServos();
     // Serial.println(micros()-t_start);
   }
