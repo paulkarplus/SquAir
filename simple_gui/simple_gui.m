@@ -22,7 +22,7 @@ function varargout = simple_gui(varargin)
 
 % Edit the above text to modify the response to help simple_gui
 
-% Last Modified by GUIDE v2.5 20-Mar-2014 01:42:11
+% Last Modified by GUIDE v2.5 20-Mar-2014 02:40:53
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -187,6 +187,12 @@ if get(hObject, 'Value')
     m2 = zeros(1,maxlen);
     m3 = zeros(1,maxlen);
     m4 = zeros(1,maxlen);
+    
+    global m1_cmd;
+    global m2_cmd;
+    global m3_cmd;
+    global m4_cmd;
+    
 
     % Add legends and axes labels
     h2=handles.axes2;
@@ -389,7 +395,22 @@ if get(hObject, 'Value')
         t1 = toc;
         %sdisp(dt);
         pause(.01)
-
+        fprintf(s,'a');
+        fprintf(s,num2str(m1_cmd));
+        fprintf(s,'a');
+        disp(num2str(m1_cmd));
+        fprintf(s,'b');
+        fprintf(s,num2str(m2_cmd));
+        fprintf(s,'b');
+        disp(num2str(m2_cmd));
+        fprintf(s,'c');
+        fprintf(s,num2str(m3_cmd));
+        fprintf(s,'c');
+        disp(num2str(m3_cmd));
+        fprintf(s,'d');
+        fprintf(s,num2str(m4_cmd));
+        fprintf(s,'d');
+        disp(num2str(m4_cmd));
     end
 else
     inst = instrfind;
@@ -418,3 +439,154 @@ function togglebutton3_Callback(hObject, eventdata, handles)
 % Open COM Port
 
 % Hint: get(hObject,'Value') returns toggle state of togglebutton3
+
+
+
+function edit2_Callback(hObject, eventdata, handles)
+% hObject    handle to edit2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit2 as text
+%        str2double(get(hObject,'String')) returns contents of edit2 as a double
+global m1_cmd;
+user_entry = str2double(get(hObject,'string'));
+if isnan(user_entry)
+    errordlg('You must enter a numeric value','Bad Input','modal')
+    uicontrol(hObject)
+	return
+end
+if user_entry > 1000 || user_entry < 0
+    errordlg('Input must be < 1000 and > 0');
+    uicontrol(hObject)
+	return
+end
+m1_cmd = user_entry;
+
+% --- Executes during object creation, after setting all properties.
+function edit2_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit3_Callback(hObject, eventdata, handles)
+% hObject    handle to edit3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit3 as text
+%        str2double(get(hObject,'String')) returns contents of edit3 as a double
+global m2_cmd;
+user_entry = str2double(get(hObject,'string'));
+if isnan(user_entry)
+    errordlg('You must enter a numeric value','Bad Input','modal')
+    uicontrol(hObject)
+	return
+end
+if user_entry > 1000 || user_entry < 0
+    errordlg('Input must be < 1000 and > 0');
+    uicontrol(hObject)
+	return
+end
+m2_cmd = user_entry;
+
+% --- Executes during object creation, after setting all properties.
+function edit3_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit4_Callback(hObject, eventdata, handles)
+% hObject    handle to edit4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit4 as text
+%        str2double(get(hObject,'String')) returns contents of edit4 as a double
+global m3_cmd;
+user_entry = str2double(get(hObject,'string'));
+if isnan(user_entry)
+    errordlg('You must enter a numeric value','Bad Input','modal')
+    uicontrol(hObject)
+	return
+end
+if user_entry > 1000 || user_entry < 0
+    errordlg('Input must be < 1000 and > 0');
+    uicontrol(hObject)
+	return
+end
+m3_cmd = user_entry;
+
+% --- Executes during object creation, after setting all properties.
+function edit4_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit5_Callback(hObject, eventdata, handles)
+% hObject    handle to edit5 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit5 as text
+%        str2double(get(hObject,'String')) returns contents of edit5 as a double
+global m4_cmd;
+user_entry = str2double(get(hObject,'string'));
+if isnan(user_entry)
+    errordlg('You must enter a numeric value','Bad Input','modal')
+    uicontrol(hObject)
+	return
+end
+if user_entry > 1000 || user_entry < 0
+    errordlg('Input must be < 1000 and > 0');
+    uicontrol(hObject)
+	return
+end
+m4_cmd = user_entry;
+
+
+
+% --- Executes during object creation, after setting all properties.
+function edit5_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit5 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in togglebutton4.
+function togglebutton4_Callback(hObject, eventdata, handles)
+% hObject    handle to togglebutton4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of togglebutton4

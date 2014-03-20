@@ -450,7 +450,6 @@ void loop() {
     Serial.print(a);
     Serial.print(b);
     
-    Serial.println("12e");
-    Serial.println(m1_cmd);
+    Serial.print("12e");
   }
 }
