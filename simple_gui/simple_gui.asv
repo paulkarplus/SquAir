@@ -78,13 +78,6 @@ axes(h5);
 xlabel('time (s)');
 ylabel('servo input (ms)');
 
-h6=handles.axes6;
-axes(h6);
-%title('gyro');
-%legend('gx','gy','gz');
-xlabel('time (s)');
-ylabel('esc output (ms)');
-
 % Choose default command line output for simple_gui
 handles.output = hObject;
 
@@ -250,8 +243,9 @@ if get(hObject, 'Value')
                     break;
                 end
             end
+
         end
-        disp(out)
+        % disp(out)
 
         % check that string starts with s and ends with e
         if out(1) == 115 && out(end) == 101
@@ -325,31 +319,6 @@ if get(hObject, 'Value')
             else
                 c4(end) = -1*(out(23)+(out(22)-128)*256);
             end
-            m1(1:end-1) = m1(2:end);
-            if out(24) < 128 
-                m1(end) = out(25)+out(24)*256;
-            else
-                m1(end) = -1*(out(25)+(out(24)-128)*256);
-            end
-            m2(1:end-1) = m2(2:end);
-            if out(26) < 128 
-                m2(end) = out(27)+out(26)*256;
-            else
-                m2(end) = -1*(out(27)+(out(26)-128)*256);
-            end
-            m3(1:end-1) = m3(2:end);
-            if out(28) < 128 
-                m3(end) = out(29)+out(28)*256;
-            else
-                m3(end) = -1*(out(29)+(out(28)-128)*256);
-            end
-            m4(1:end-1) = m4(2:end);
-            if out(30) < 128 
-                m4(end) = out(31)+out(30)*256;
-            else
-                m4(end) = -1*(out(31)+(out(30)-128)*256);
-            end
-            
             % Only plot at 50hz
             if toc-tmr > .015 
                 axes(h2);
@@ -373,13 +342,6 @@ if get(hObject, 'Value')
                 set(ah5(2),'XData',t,'YData',c2);
                 set(ah5(3),'XData',t,'YData',c3);
                 set(ah5(4),'XData',t,'YData',c4);
-                xlim([min(t),max(t)]);
-                
-                axes(h6);
-                set(ah6(1),'XData',t,'YData',m1);
-                set(ah6(2),'XData',t,'YData',m2);
-                set(ah6(3),'XData',t,'YData',m3);
-                set(ah6(4),'XData',t,'YData',m4);
                 xlim([min(t),max(t)]);
 
                 tmr = toc;

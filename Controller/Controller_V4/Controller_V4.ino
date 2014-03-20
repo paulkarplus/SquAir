@@ -10,7 +10,6 @@ This code is the controller for the SquAir quadcopter.
 #include "MPU6050.h"
 #include <Wire.h>
 #include <Adafruit_BMP085.h>
-
 // Declare global variables
 MPU6050 accelgyro;
 Adafruit_BMP085 bmp;
@@ -20,7 +19,7 @@ int alt = 0;
 String commandmotor;
 int selectmotor = 0;
 int t_last = 0;
-int loop_period = 2000; // period of control loop in micros (500hz)
+int loop_period = 5000; // period of control loop in micros (500hz)
 int m1_cmd = 0, m2_cmd = 0, m3_cmd = 0, m4_cmd = 0;
 
 // Define output servos
@@ -59,10 +58,10 @@ volatile uint32_t bUpdateFlagsShared;
 // we first turn interrupts off with noInterrupts
 // we take a copy to use in loop and the turn interrupts back on
 // as quickly as possible, this ensures that we are always able to receive new signals
-volatile uint32_t unChannel1InShared;
-volatile uint32_t unChannel2InShared;
-volatile uint32_t unChannel3InShared;
-volatile uint32_t unChannel4InShared;
+volatile uint16_t unChannel1InShared;
+volatile uint16_t unChannel2InShared;
+volatile uint16_t unChannel3InShared;
+volatile uint16_t unChannel4InShared;
 
 // create local variables to hold a local copies of the channel inputs
 // these are declared static so that thier values will be retained
@@ -132,6 +131,7 @@ void readAngle() {
   
   // Read accelgyro data
   accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);  
+  /*
   Serial.print(t);
   Serial.print(",");
   Serial.print(ax);
@@ -146,11 +146,12 @@ void readAngle() {
   Serial.print(",");
   Serial.print(gz);
   Serial.print(",");
+  */
 }
 
 void readAlt() {
   // Read the altitude from the BMP085 pressure sensory using the Adafruit library.
-  alt = bmp.readAltitude();
+  alt = bmp.readAltitude()*100;
   /*
   Serial.print(alt);
   Serial.print(",");
@@ -221,6 +222,7 @@ void readServos() {
   }
 
   // Print servo values to serial
+  /*
   Serial.print(ch1);
   Serial.print(",");
   Serial.print(ch2);
@@ -229,6 +231,7 @@ void readServos() {
   Serial.print(",");
   Serial.print(ch4);
   Serial.print(",");
+  */
 }
       
 void writeServos() {
@@ -245,7 +248,7 @@ void writeServos() {
   servoChannel3.writeMicroseconds(1000 + m3_cmd);
   servoChannel4.writeMicroseconds(1000 + m4_cmd);
   
-
+  /*
   Serial.print(m1_cmd);
   Serial.print(',');
   Serial.print(m2_cmd);
@@ -253,13 +256,11 @@ void writeServos() {
   Serial.print(m3_cmd);
   Serial.print(',');
   Serial.println(m4_cmd);
+  */
 }
     
 void setup() {
   Serial.begin(115200);
-
-  // BMP085
-  bmp.begin();
   
   // Turn on startup LED
   pinMode(LED_PIN, OUTPUT);
@@ -287,22 +288,23 @@ void setup() {
   // Power cycle the I2C devices after a reset.
   pinMode(I2C_PWR, OUTPUT);
   digitalWrite(I2C_PWR, false);
-  delay(500);
+  delay(100);
   digitalWrite(I2C_PWR, true);
   
   // Initialize I2C
-  #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-      Wire.begin();
-  #elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
-      Fastwire::setup(400, true);
-  #endif
-  delay(1000);
+  Wire.begin();
+  delay(100);
   
   // Initialize Serial
   Serial.begin(115200);
   
   // Initialize MPU6050 accelgyro
   accelgyro.initialize();
+  
+  // BMP085
+  bmp.begin();
+  
+  delay(100);
       
   t_last = micros();
   
@@ -369,5 +371,86 @@ void loop() {
     readServos();
     writeServos();
     // Serial.println(micros()-t_start);
+    Serial.print("s");
+    // Print Accelerometer Values
+    char a = abs(ax)/256;
+    if (ax < 0) a += 128;
+    char b = abs(ax)%256;
+    Serial.print(a);
+    Serial.print(b);
+    a = abs(ay)/256;
+    if (ay < 0) a += 128;
+    b = abs(ay)%256;
+    Serial.print(a);
+    Serial.print(b);
+    a = abs(az)/256;
+    if (az < 0) a += 128;
+    b = abs(az)%256;
+    Serial.print(a);
+    Serial.print(b);
+    // Print Gyro Values
+    a = abs(gx)/256;
+    if (gx < 0) a += 128;
+    b = abs(gx)%256;
+    Serial.print(a);
+    Serial.print(b);
+    a = abs(gy)/256;
+    if (gy < 0) a += 128;
+    b = abs(gy)%256;
+    Serial.print(a);
+    Serial.print(b);
+    a = abs(gz)/256;
+    if (gz < 0) a += 128;
+    b = abs(gz)%256;
+    Serial.print(a);
+    Serial.print(b);
+    a = abs(alt)/256;
+    if (alt < 0) a += 128;
+    b = abs(alt)%256;
+    Serial.print(a);
+    Serial.print(b);
+    a = abs(unChannel1In)/256;
+    if (unChannel1In < 0) a += 128;
+    b = abs(unChannel1In)%256;
+    Serial.print(a);
+    Serial.print(b);
+    a = abs(unChannel2In)/256;
+    if (unChannel2In < 0) a += 128;
+    b = abs(unChannel2In)%256;
+    Serial.print(a);
+    Serial.print(b);
+    a = abs(unChannel3In)/256;
+    if (unChannel3In < 0) a += 128;
+    b = abs(unChannel3In)%256;
+    Serial.print(a);
+    Serial.print(b);
+    a = abs(unChannel4In)/256;
+    if (unChannel4In < 0) a += 128;
+    b = abs(unChannel4In)%256;
+    Serial.print(a);
+    Serial.print(b);
+    a = abs(m1_cmd)/256;
+    if (m1_cmd < 0) a += 128;
+    b = abs(m1_cmd)%256;
+    Serial.print(a);
+    Serial.print(b);
+    a = abs(m2_cmd)/256;
+    if (m2_cmd < 0) a += 128;
+    b = abs(m2_cmd)%256;
+    Serial.print(a);
+    Serial.print(b);
+    a = abs(m3_cmd)/256;
+    if (m3_cmd < 0) a += 128;
+    b = abs(m3_cmd)%256;
+    Serial.print(a);
+    Serial.print(b);
+    a = abs(m4_cmd)/256;
+    if (m4_cmd < 0) a += 128;
+    b = abs(m4_cmd)%256;
+    Serial.print(a);
+    Serial.print(b);
+    
+    Serial.println("12e");
+    Serial.println(m1_cmd);
   }
 }
