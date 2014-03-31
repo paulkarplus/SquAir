@@ -163,9 +163,9 @@ if get(hObject, 'Value')
     s.InputBufferSize = 32768;
     if s.Status == 'closed'
         fopen(s);
-    end 
+    end
     disp('serial on');
-
+    
     % Initialize axis variables
     tic
     tmr = toc;
@@ -257,7 +257,6 @@ if get(hObject, 'Value')
                 end
             end
         end
-        disp(out)
 
         % check that string starts with s and ends with e
         if out(1) == 115 && out(end) == 101
@@ -394,23 +393,23 @@ if get(hObject, 'Value')
         dt = toc-t1;
         t1 = toc;
         %sdisp(dt);
+        
+        
+        if length(s.Status) == 4
+            fprintf(s,'a');
+            fprintf(s,num2str(m1_cmd));
+            fprintf(s,'a');
+            fprintf(s,'b');
+            fprintf(s,num2str(m2_cmd));
+            fprintf(s,'b');
+            fprintf(s,'c');
+            fprintf(s,num2str(m3_cmd));
+            fprintf(s,'c');
+            fprintf(s,'d');
+            fprintf(s,num2str(m4_cmd));
+            fprintf(s,'d');
+        end
         pause(.01)
-        fprintf(s,'a');
-        fprintf(s,num2str(m1_cmd));
-        fprintf(s,'a');
-        disp(num2str(m1_cmd));
-        fprintf(s,'b');
-        fprintf(s,num2str(m2_cmd));
-        fprintf(s,'b');
-        disp(num2str(m2_cmd));
-        fprintf(s,'c');
-        fprintf(s,num2str(m3_cmd));
-        fprintf(s,'c');
-        disp(num2str(m3_cmd));
-        fprintf(s,'d');
-        fprintf(s,num2str(m4_cmd));
-        fprintf(s,'d');
-        disp(num2str(m4_cmd));
     end
 else
     inst = instrfind;

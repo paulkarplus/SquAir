@@ -1,0 +1,3 @@
+LIBRARY quad_model_V1_sfun.mexw64
+EXPORTS
+mexFunction
